@@ -1,4 +1,6 @@
-const MongoClient = require('mongodb').MongoClient;
+//const MongoClient = require('mongodb').MongoClient;
+const {MongoClient, ObjectID} = require('mongodb'); //destrukturyzacja
+
 
 MongoClient.connect('mongodb://localhost:27017/toDoApp',{ useNewUrlParser: true }, (err, client) => {
     if(err){
