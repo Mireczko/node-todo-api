@@ -21,6 +21,14 @@ app.post('/Tasks', (req, res) => {
     });
 });
 
+app.get('/Tasks', (req, res) =>{
+    Task.find().then((tasks) => {
+        res.send({tasks});
+    }, (e) => {
+        res.status(400).send(e);
+    });
+});
+
 app.listen(3000, () => {
     console.log('Started on port 3000');
 });
