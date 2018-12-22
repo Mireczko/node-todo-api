@@ -3,7 +3,7 @@ let bodyParser = require('body-parser');
 const {ObjectID} = require('mongodb');
 let {mongoose} = require('./db/mongoose');
 let {Task} = require('./models/Task');
-let {User} = require('./models/User');
+let {User} = require('./models/User');  
 
 let app = express();
 
@@ -38,13 +38,27 @@ app.get('/Tasks/:id', (req, res) => {
         if(!task){
             return res.status(404).send();
         }
-
         res.send({task});
     }).catch((e) => {
         res.status(400).send();
     });
 });
 
+app.delete('/Tasks/:id', (req, res) => {
+    let id = req.params.id;
+    if(!ObjectID.isValid(id)){
+        return res.status(404).send();
+    }
+    Task.findByIdAndDelete(id).then((task) =>{
+        if(!task){
+            return res.status(404).send();
+        }
+        res.send(task);
+    }).catch((e) => {
+        res.status(400).send();
+    });
+});
+
 app.listen(3000, () => {
-    console.log('Started on port 3000');
+    console.log(`Started on port ${3000}`);
 });
