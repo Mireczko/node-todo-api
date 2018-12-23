@@ -7,11 +7,11 @@ let Task = mongoose.model('Task', {
         minlength: 1,
         trim: true
     },
-    completed:{
-        type: Boolean,
-        default: false
+    status:{
+        type: String,
+        default: 'Not started'
     },
-    completedAt: {
+    lastUpdatedAt: {
         type: Number,
         default: null
     }
