@@ -1,5 +1,8 @@
-const {SHA256} = require('crypto-js');
+const bcrypt = require('bcryptjs');
 
-let message = "raz dwa trzy";
-let hash = SHA256(message).toString();
-console.log(hash);
+let pass = "123abc";
+bcrypt.genSalt(1024, (err, salt) => {
+    bcrypt.hash(pass, salt, (err, hash) => {
+        console.log(hash);
+    })
+})

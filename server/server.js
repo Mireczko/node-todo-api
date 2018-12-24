@@ -6,12 +6,17 @@ let {Task} = require('./models/Task');
 let {User} = require('./models/User');
 const _ = require('lodash');
 const jwt = require('jsonwebtoken');
+let {authenticate} = require('./middleware/authenticate');
 
 let app = express();
 
 let jsonParser = bodyParser.json()
 app.use(jsonParser);
 
+
+app.get('/users/me', authenticate, (req, res) => {
+    res.send(req.user);
+});
 
 app.post('/users', (req, res) => {
     let body = _.pick(req.body, ['username', 'password']);
