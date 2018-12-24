@@ -31,6 +31,17 @@ app.post('/users', (req, res) => {
     })
 });
 
+app.post('/users/login', (req, res) => {
+    let body = _.pick(req.body, ['username', 'password']);
+    User.findByCredentials(body.username, body.password).then((user) => {
+        return user.generateAuthToken().then((token) => {
+            res.header('x-auth', token).send(user);
+        });
+    }).catch((e) => {
+        res.status(400).send();
+    });
+});
+
 app.post('/tasks', (req, res) => {
     let newTask = new Task({
         text: req.body.text
