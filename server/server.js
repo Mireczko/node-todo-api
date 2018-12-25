@@ -18,24 +18,23 @@ app.get('/users/me', authenticate, (req, res) => {
     res.send(req.user);
 });
 
-app.post('/users', (req, res) => {
-    let body = _.pick(req.body, ['username', 'password']);
+app.post('/users', authenticate, (req, res) => {
+    if(req.user.isAdmin===false) return res.status(401).send();
+    let body = _.pick(req.body, ['username', 'password', 'isAdmin']);
     let newUser = new User(body);
 
     newUser.save().then(() => {
-        return newUser.generateAuthToken();
-    }).then((token) => {
-        res.header('x-auth', token).send(newUser);
+        res.status(200).send();
     }).catch((e) => {
         res.status(400).send(e);
-    })
+    });
 });
 
 app.post('/users/login', (req, res) => {
     let body = _.pick(req.body, ['username', 'password']);
     User.findByCredentials(body.username, body.password).then((user) => {
         return user.generateAuthToken().then((token) => {
-            res.header('x-auth', token).send(user);
+            res.header('x-auth', token).send(user); 
         });
     }).catch((e) => {
         res.status(400).send();
@@ -50,9 +49,11 @@ app.delete('/users/me/token', authenticate, (req, res) => {
     }
 });
 
-app.post('/tasks', (req, res) => {
+app.post('/tasks', authenticate, (req, res) => {
+    if(req.user.isAdmin===false) return res.status(401).send();
     let newTask = new Task({
-        text: req.body.text
+        text: req.body.text,
+        user: req.body.user
     });
     newTask.save().then((document) => {
         res.send(document);
@@ -61,45 +62,78 @@ app.post('/tasks', (req, res) => {
     };
 });
 
-app.get('/tasks', (req, res) =>{
-    Task.find().then((tasks) => {
-        res.send({tasks});
-    }, (e) => {
-        res.status(404).send(e);
-    });
+app.get('/tasks', authenticate, (req, res) =>{
+    if(req.user.isAdmin===true){
+        Task.find({}).then((tasks) => {
+            res.send({tasks});
+        }, (e) => {
+            res.status(404).send(e);
+        });
+    } else {
+        Task.find({
+            user: req.user._id
+        }).then((tasks) => {
+            res.send({tasks});
+        }, (e) => {
+            res.status(404).send(e);
+        });
+    }
 });
 
-app.get('/tasks/:id', (req, res) => {
+app.get('/tasks/:id', authenticate, (req, res) => {
     let id = req.params.id;
     if(!ObjectID.isValid(id)){
        return res.status(400).send();
     }
-    Task.findById(id).then((task) => {
-        if(!task){
-            return res.status(404).send();
-        }
-        res.send({task});
-    }).catch((e) => {
-        res.status(400).send();
-    });
+    if(req.user.isAdmin===true){
+        Task.findOne({
+            _id: id,
+        }).then((task) => {
+            if(!task){
+                return res.status(404).send();
+            }
+            res.send({task});
+        }).catch((e) => {
+            res.status(400).send();
+        });
+    } else {
+        Task.findOne({
+            _id: id,
+            user: req.user._id
+        }).then((task) => {
+            if(!task){
+                return res.status(404).send();
+            }
+            res.send({task});
+        }).catch((e) => {
+            res.status(400).send();
+        });
+    }
+
 });
 
-app.delete('/tasks/:id', (req, res) => {
+app.delete('/tasks/:id', authenticate, (req, res) => {
     let id = req.params.id;
     if(!ObjectID.isValid(id)){
         return res.status(404).send();
     }
-    Task.findByIdAndDelete(id).then((task) =>{
-        if(!task){
-            return res.status(404).send();
-        }
-        res.send(task);
-    }).catch((e) => {
-        res.status(400).send();
-    });
+    if(req.user.isAdmin===true){
+        Task.deleteOne({
+            _id: id,
+        }).then((task) =>{
+            if(!task){
+                return res.status(404).send();
+            }
+            res.send(task);
+        }).catch((e) => {
+            res.status(400).send();
+        });
+    } else {
+        res.status(401).send();
+    }
 });
 
-app.patch('/tasks/:id', (req, res) => {
+app.patch('/tasks/:id', authenticate, (req, res) => {
     let id = req.params.id;
     let body = _.pick(req.body, ['text', 'status']);
 
@@ -115,14 +149,30 @@ app.patch('/tasks/:id', (req, res) => {
     }
     body.lastUpdatedAt = new Date().getTime();
 
-    Task.findByIdAndUpdate(id, {$set: body}, {new: true}).then((task) => {
-        if(!task){
-            return res.status(404).send();
-        }
-        res.send({task});
-    }).catch((e) => {
-        res.status(400).send();
-    });
+    if(req.user.isAdmin===true){
+        Task.findOneAndUpdate({
+            _id: id,
+        }, {$set: body}, {new: true}).then((task) => {
+            if(!task){
+                return res.status(404).send();
+            }
+            res.send({task});
+        }).catch((e) => {
+            res.status(400).send();
+        });
+    } else {
+        Task.findOneAndUpdate({
+            _id: id,
+            user: req.user._id
+        }, {$set: body}, {new: true}).then((task) => {
+            if(!task){
+                return res.status(404).send();
+            }
+            res.send({task});
+        }).catch((e) => {
+            res.status(400).send();
+        });
+    }
 });
 
 app.listen(3000, () => {

@@ -14,6 +14,10 @@ let Task = mongoose.model('Task', {
     lastUpdatedAt: {
         type: Number,
         default: null
+    },
+    user: {
+        type: mongoose.Schema.Types.ObjectId,
+        required: true,
     }
  });
 

@@ -34,7 +34,6 @@ let UserSchema = new mongoose.Schema({
 });
 
 UserSchema.methods.toJSON = function(){
-//let user = this;
     let userObject = this.toObject();
     return _.pick(userObject, ['_id', 'username']);
 }
