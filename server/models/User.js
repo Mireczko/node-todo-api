@@ -40,16 +40,14 @@ let UserSchema = new mongoose.Schema({
     tokens: [ChildTokenSchema]
 });
 
-
-let timeouts = [];
 UserSchema.methods.removeOldToken = function(token){
-    timeouts.push(setTimeout(()=> {
+    setTimeout(()=> {
         this.removeToken(token, 600000).then((user) => {
             console.log(user);
         }).catch((e) => {
             console.log(e);
         });
-    },600000))
+    },600000)
 };
 
 UserSchema.methods.toJSON = function(){
