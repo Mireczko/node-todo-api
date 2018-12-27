@@ -46,4 +46,14 @@ router.delete('/me/token', authenticate, (req, res) => {
     }
 });
 
+router.delete('/clearTrash', authenticate, (req, res) => {
+    if(req.user.isAdmin===false) return res.status(401).send();
+    User.removeTrashTokens(600000).then((doc) => {
+        console.log(doc);
+        res.status(200).send()
+    }), () => {
+        res.status(400).send();
+    }
+});
+
 module.exports = router;

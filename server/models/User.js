@@ -41,14 +41,15 @@ let UserSchema = new mongoose.Schema({
 });
 
 
+let timeouts = [];
 UserSchema.methods.removeOldToken = function(token){
-    setTimeout(()=> {
+    timeouts.push(setTimeout(()=> {
         this.removeToken(token, 600000).then((user) => {
             console.log(user);
         }).catch((e) => {
             console.log(e);
         });
-    },600000)
+    },600000))
 };
 
 UserSchema.methods.toJSON = function(){
@@ -112,20 +113,17 @@ UserSchema.methods.refreshToken = function(token){
     });
 }
 
-UserSchema.pre('save', function(next) {
-    let user = this;
+UserSchema.statics.removeTrashTokens = function(maxAge){
+    let User = this;
+    return User.updateMany({
+        $pull:{
+            tokens:{
+                lastUsedAt: {$lt: maxAge ? Date.now() - maxAge : Date.now()}
+            }
+        }
+    });
+};
 
-    if(user.isModified('password')){
-        bcrypt.genSalt(10, (err, salt) => {
-            bcrypt.hash(user.password, salt, (err, hash) => {
-                user.password = hash;
-                next(); 
-            });
-        });
-    } else {
-        next();
-    }
-});
 
 UserSchema.statics.findByCredentials = function(username, password){
     let User = this;
@@ -145,6 +143,20 @@ UserSchema.statics.findByCredentials = function(username, password){
     });
 };
 
+UserSchema.pre('save', function(next) {
+    let user = this;
+
+    if(user.isModified('password')){
+        bcrypt.genSalt(10, (err, salt) => {
+            bcrypt.hash(user.password, salt, (err, hash) => {
+                user.password = hash;
+                next(); 
+            });
+        });
+    } else {
+        next();
+    }
+});
 
 let User = mongoose.model('User', UserSchema);
   
