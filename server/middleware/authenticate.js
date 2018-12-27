@@ -9,9 +9,11 @@ let authenticate = (req, res, next) => {
         req.user = user;
         req.token = token;
         next();
+    }).then(() => {
+        if(req.method!=="DELETE") req.user.refreshToken(token).then((user)=>{});
     }).catch((e) => {
         res.status(401).send();
     });
 };
 
-module.exports = {authenticate};    
+module.exports = {authenticate};

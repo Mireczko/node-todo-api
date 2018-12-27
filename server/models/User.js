@@ -3,6 +3,22 @@ let jwt = require('jsonwebtoken');
 let _ = require('lodash');
 const bcrypt = require('bcryptjs');
 
+ChildTokenSchema = new mongoose.Schema({
+    access: {
+        type: String,
+        required: true,
+    },
+    token: {
+        type: String,
+        required: true,
+    },
+    createdAt: {type:Number,default:Date.now},
+    lastUsedAt:{
+        type: Number,
+        default: Date.now
+    }
+});
+
 let UserSchema = new mongoose.Schema({
     username: {
         type: String,
@@ -21,17 +37,19 @@ let UserSchema = new mongoose.Schema({
         required: true,
         default: false
     },
-    tokens: [{  
-        access:{
-            type: String,
-            required: true
-        },
-        token: {
-            type: String,
-            required: true
-        }
-    }]
+    tokens: [ChildTokenSchema]
 });
+
+
+UserSchema.methods.removeOldToken = function(token){
+    setTimeout(()=> {
+        this.removeToken(token, 600000).then((user) => {
+            console.log(user);
+        }).catch((e) => {
+            console.log(e);
+        });
+    },600000)
+};
 
 UserSchema.methods.toJSON = function(){
     let userObject = this.toObject();
@@ -66,15 +84,33 @@ UserSchema.statics.findOneByToken = function (token) {
     });
 };
 
-UserSchema.methods.removeToken = function(token) {
-     let user = this;
-
-     return user.updateOne({
-         $pull: {
-            tokens: {token}
-         }
-     });
+UserSchema.methods.removeToken = function(token, maxAge){
+    let user = this;
+    return user.updateOne(
+        {$pull: {
+            tokens: {
+                token: token,
+                lastUsedAt: {$lt: maxAge ? Date.now() - maxAge : Date.now()}
+            },
+        }
+    });
 };
+
+UserSchema.methods.refreshToken = function(token){
+    let user = this;
+    let tokenObject;
+    for(let i=0; i<user.tokens.length; i++){
+        tokenObject = user.tokens[i];
+        if(tokenObject.token===token){
+            break;
+        }
+    }
+    tokenObject.lastUsedAt = Date.now();
+    return user.updateOne(
+        {
+        $set: {'tokens': tokenObject}
+    });
+}
 
 UserSchema.pre('save', function(next) {
     let user = this;
